@@ -1,7 +1,8 @@
 import tkinter as tk
 import numpy as np
+from PIL import Image, ImageTk
 from Partida import remover_acentos, escolher_tema_palavra
-
+import os
 
 class ForcaGame:
     def __init__(self, root):
@@ -10,7 +11,7 @@ class ForcaGame:
 
         # Remover a opção de maximizar e centralizar a janela
         self.root.resizable(False, False)
-        self.centralizar_janela(600, 450)
+        self.centralizar_janela(800, 400)  # Aumenta o tamanho da janela para caber a imagem
 
         self.tema = ""
         self.palavra = ""
@@ -20,24 +21,47 @@ class ForcaGame:
         self.tentativas = 6
         self.botoes = {}  # Dicionário para armazenar os botões das letras
 
+        # Caminho das imagens
+        current_dir = os.path.dirname(__file__)
+        self.img_paths = [os.path.join(current_dir, f"Resource/forca_{i}.png") for i in range(7)]  # Imagens da forca 0-6
+        self.img_forca = None
+
+        # Frame para organizar layout
+        self.main_frame = tk.Frame(self.root)
+        self.main_frame.pack()
+
+        # Frame esquerdo para a imagem da forca e labels de tentativas e letras tentadas
+        self.left_frame = tk.Frame(self.main_frame)
+        self.left_frame.grid(row=0, column=0, padx=10, pady=10)
+
+        # Label para as tentativas restantes (acima da imagem)
+        self.tentativas_label = tk.Label(self.left_frame, text="Tentativas restantes: 6", font=("Arial", 14))
+        self.tentativas_label.pack()
+
+        # Label para exibir a imagem da forca
+        self.forca_label = tk.Label(self.left_frame)
+        self.forca_label.pack()
+
+        # Label para letras tentadas (abaixo da imagem)
+        self.letras_tentadas_label = tk.Label(self.left_frame, text="Letras tentadas: ", font=("Arial", 14))
+        self.letras_tentadas_label.pack()
+
+        # Frame direito para o jogo
+        self.right_frame = tk.Frame(self.main_frame)
+        self.right_frame.grid(row=0, column=1, padx=10, pady=10)
+
         # Widgets
-        self.tema_label = tk.Label(self.root, text="Tema: ", font=("Arial", 14))
+        self.tema_label = tk.Label(self.right_frame, text="Tema: ", font=("Arial", 14))
         self.tema_label.pack(pady=10)
 
-        self.palavra_label = tk.Label(self.root, text="Palavra: ", font=("Arial", 16))
+        self.palavra_label = tk.Label(self.right_frame, text="Palavra: ", font=("Arial", 16))
         self.palavra_label.pack(pady=10)
-
-        self.tentativas_label = tk.Label(self.root, text="Tentativas restantes: 6", font=("Arial", 14))
-        self.tentativas_label.pack(pady=10)
-
-        self.letras_tentadas_label = tk.Label(self.root, text="Letras tentadas: ", font=("Arial", 14))
-        self.letras_tentadas_label.pack(pady=10)
 
         # Inicializa o jogo
         self.iniciar_jogo()
 
         # Criação dos botões das letras (A-Z + Espaço e -)
-        self.buttons_frame = tk.Frame(self.root)
+        self.buttons_frame = tk.Frame(self.right_frame)
         self.buttons_frame.pack(pady=10)
 
         self.criar_botoes_letras()
@@ -54,10 +78,8 @@ class ForcaGame:
 
     def iniciar_jogo(self):
         """Inicia uma nova partida e reseta os botões"""
-        # Resetar os botões ao iniciar um novo jogo
         self.resetar_botoes()
 
-        # Recomeçar a lógica do jogo
         dadosPartida = escolher_tema_palavra()
         self.tema, self.palavra = dadosPartida.split(" | ")
 
@@ -86,7 +108,7 @@ class ForcaGame:
         """Função auxiliar para adicionar botões ao layout"""
         if letra_real is None:
             letra_real = letra.lower()
-        btn = tk.Button(self.buttons_frame, text=letra.upper(),font=("Arial", 10, "bold"), width=largura, height=2,
+        btn = tk.Button(self.buttons_frame, text=letra.upper(), font=("Arial", 10, "bold"), width=largura, height=2,
                         command=lambda: self.tentar_letra(letra_real, btn))
         btn.grid(row=row, column=col, columnspan=col_span, padx=5, pady=5)
         self.botoes[letra_real] = btn
@@ -128,20 +150,26 @@ class ForcaGame:
         self.tema_label.config(text=f"Tema: {self.tema}")
         self.palavra_label.config(text=f"Palavra: {' '.join(self.letras_corretas)}")
         self.tentativas_label.config(text=f"Tentativas restantes: {self.tentativas}")
-        self.letras_tentadas_label.config(text=f"Letras tentadas: {', '.join(sorted(self.letras_tentadas))}")
+        
+        # Formatar as letras tentadas para quebrar linha a cada 8 letras
+        letras_tentadas_lista = sorted(self.letras_tentadas)
+        linhas_letras_tentadas = [', '.join(letras_tentadas_lista[i:i+8]) for i in range(0, len(letras_tentadas_lista), 8)]
+        letras_tentadas_formatadas = '\n'.join(linhas_letras_tentadas)
+        
+        self.letras_tentadas_label.config(text=f"Letras tentadas:\n{letras_tentadas_formatadas}")
+
+        # Redimensiona e atualiza a imagem da forca de acordo com as tentativas restantes
+        img = Image.open(self.img_paths[6 - self.tentativas])
+        img = img.resize((250, 250), Image.Resampling.LANCZOS)  # Redimensiona a imagem para 250x250
+        self.img_forca = ImageTk.PhotoImage(img)
+        self.forca_label.config(image=self.img_forca)
 
     def encerrar_jogo(self, mensagem):
-            resultado = tk.messagebox.askquestion("Fim de jogo", f"{mensagem}\nQuer jogar novamente?")
-            if resultado == 'yes':
-                self.iniciar_jogo()  # Reseta o jogo
-            else:
-                from Menu import mostrar_menu  # Import atrasado para evitar ciclo de importação
-                self.root.destroy()  # Fecha a janela do jogo antes de voltar ao menu
-                mostrar_menu()  # Volta para o menu principal
-
-
-# Inicialização da aplicação
-if __name__ == "__main__":
-    root = tk.Tk()
-    game = ForcaGame(root)
-    root.mainloop()
+        """Exibe uma mensagem de final de jogo"""
+        resultado = tk.messagebox.askquestion("Fim de jogo", f"{mensagem}\nQuer jogar novamente?")
+        if resultado == 'yes':
+            self.iniciar_jogo()  # Reseta o jogo
+        else:
+            from Menu import mostrar_menu  # Import atrasado para evitar ciclo de importação
+            self.root.destroy()  # Fecha a janela do jogo antes de voltar ao menu
+            mostrar_menu()  # Volta para o menu principal
