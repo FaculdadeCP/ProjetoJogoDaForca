@@ -2,6 +2,7 @@ import tkinter as tk
 import numpy as np
 from Partida import remover_acentos, escolher_tema_palavra
 
+
 class ForcaGame:
     def __init__(self, root):
         self.root = root
@@ -17,6 +18,7 @@ class ForcaGame:
         self.letras_corretas = np.array([])
         self.letras_tentadas = set()
         self.tentativas = 6
+        self.botoes = {}  # Dicionário para armazenar os botões das letras
 
         # Widgets
         self.tema_label = tk.Label(self.root, text="Tema: ", font=("Arial", 14))
@@ -51,7 +53,11 @@ class ForcaGame:
         self.root.geometry(f"{width}x{height}+{x_cordinate}+{y_cordinate}")
 
     def iniciar_jogo(self):
-        """Inicia uma nova partida"""
+        """Inicia uma nova partida e reseta os botões"""
+        # Resetar os botões ao iniciar um novo jogo
+        self.resetar_botoes()
+
+        # Recomeçar a lógica do jogo
         dadosPartida = escolher_tema_palavra()
         self.tema, self.palavra = dadosPartida.split(" | ")
 
@@ -68,21 +74,32 @@ class ForcaGame:
 
         # Criar botões de letras A-Z com 7 colunas por linha
         for i, letra in enumerate(alfabeto):
-            btn = tk.Button(self.buttons_frame, text=letra.upper(), width=4, height=2, command=lambda l=letra: self.tentar_letra(l))
-            btn.grid(row=i//7, column=i % 7, padx=5, pady=5)
+            self.adicionar_botao(letra, i // 7, i % 7)
 
-        # Botão "Espaço" ao lado do botão "Z", ocupando as duas últimas colunas
-        btn_espaco = tk.Button(self.buttons_frame, text="Espaço", width=10, height=2, command=lambda: self.tentar_letra(' '))
-        btn_espaco.grid(row=3, column=5, columnspan=2, padx=5, pady=5)  # Alinhado ao lado do "Z", centralizado
+        # Botão "Espaço" ao lado do botão "Z", ocupando duas colunas
+        self.adicionar_botao("Espaço", 3, 5, letra_real=' ', largura=12, col_span=2)
 
         # Criar botão para "-"
-        btn_traco = tk.Button(self.buttons_frame, text="-", width=4, height=2, command=lambda: self.tentar_letra('-'))
-        btn_traco.grid(row=3, column=7, padx=5, pady=5)  # Alinhado à direita do botão "Espaço"
+        self.adicionar_botao("-", 3, 7)
 
-    def tentar_letra(self, letra):
+    def adicionar_botao(self, letra, row, col, letra_real=None, largura=4, col_span=1):
+        """Função auxiliar para adicionar botões ao layout"""
+        if letra_real is None:
+            letra_real = letra.lower()
+        btn = tk.Button(self.buttons_frame, text=letra.upper(),font=("Arial", 10, "bold"), width=largura, height=2,
+                        command=lambda: self.tentar_letra(letra_real, btn))
+        btn.grid(row=row, column=col, columnspan=col_span, padx=5, pady=5)
+        self.botoes[letra_real] = btn
+
+    def resetar_botoes(self):
+        """Reseta os botões para o estado inicial (habilitados e com a cor padrão)"""
+        for letra, botao in self.botoes.items():
+            botao.config(state=tk.NORMAL, bg="SystemButtonFace")  # Habilita o botão e restaura a cor padrão
+
+    def tentar_letra(self, letra, botao):
         """Função chamada ao clicar em uma letra"""
         letra_normalizada = remover_acentos(letra)
-        
+
         if letra in self.letras_tentadas:
             return  # Letra já foi tentada
 
@@ -93,9 +110,12 @@ class ForcaGame:
             for idx, char in enumerate(palavra_normalizada):
                 if char == letra_normalizada:
                     self.letras_corretas[idx] = self.caracteres[idx]
+            botao.config(bg="#bbf1ae")  # Se a letra estiver correta, o botão fica verde
         else:
             self.tentativas -= 1
+            botao.config(bg="#f97773")  # Se a letra estiver incorreta, o botão fica vermelho
 
+        botao.config(state=tk.DISABLED)  # Desabilita o botão após o clique
         self.atualizar_interface()
 
         if "_" not in self.letras_corretas:
@@ -111,12 +131,14 @@ class ForcaGame:
         self.letras_tentadas_label.config(text=f"Letras tentadas: {', '.join(sorted(self.letras_tentadas))}")
 
     def encerrar_jogo(self, mensagem):
-        """Exibe uma mensagem de final de jogo"""
-        resultado = tk.messagebox.askquestion("Fim de jogo", f"{mensagem}\nQuer jogar novamente?")
-        if resultado == 'yes':
-            self.iniciar_jogo()
-        else:
-            self.root.quit()
+            resultado = tk.messagebox.askquestion("Fim de jogo", f"{mensagem}\nQuer jogar novamente?")
+            if resultado == 'yes':
+                self.iniciar_jogo()  # Reseta o jogo
+            else:
+                from Menu import mostrar_menu  # Import atrasado para evitar ciclo de importação
+                self.root.destroy()  # Fecha a janela do jogo antes de voltar ao menu
+                mostrar_menu()  # Volta para o menu principal
+
 
 # Inicialização da aplicação
 if __name__ == "__main__":
