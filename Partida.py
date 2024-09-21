@@ -1,7 +1,6 @@
 import numpy as np
 import unicodedata  # Para normalizar e remover acentos
 from Palavras import escolher_tema_palavra
-from Main import limpar_tela
 
 tema = ""
 palavra = ""
@@ -35,7 +34,6 @@ def Comecar():
 
     # Loop do jogo
     while tentativas > 0 and "_" in letras_corretas:
-        limpar_tela()
         print(f"Tema: {tema}")
         print(f"Letras tentadas: {', '.join(letras_tentadas)}")  # Mostra as letras já tentadas
         print("")
@@ -48,11 +46,10 @@ def Comecar():
         insere_letra()
 
     if "_" not in letras_corretas:
-        limpar_tela()
+
         print(f"Parabéns! Você acertou a palavra: {palavra}")
         input("Pressione qualquer tecla para voltar ao menu...")
     else:
-        limpar_tela()
         print(f"Você perdeu! A palavra era: {palavra}")
         input("Pressione qualquer tecla para voltar ao menu...")
 
