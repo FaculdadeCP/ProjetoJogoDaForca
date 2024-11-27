@@ -1,8 +1,18 @@
-from Menu import *  # Importa o Menu
+from Classes.Data import Data
+from Classes.Jogador import Jogador
+from Classes.Menu import Menu
 
-def main():
-    # Inicializa o menu ao iniciar o programa
-    mostrar_menu()  # Executa a interface gráfica
 
 if __name__ == "__main__":
-    main()
+    data = Data()  # Inicializa o gerenciador do CSV
+    menu = Menu(data)  # Inicializa o menu com o gerenciador de dados
+
+    print("=== Bem-vindo ao Jogo da Forca ===")
+    jogador = None
+    while jogador is None:  # Continua pedindo email até login ou cadastro bem-sucedido
+      jogador = menu.obter_jogador()
+    
+    # Exibe o menu principal após login/cadastro
+    menu.exibir_menu_principal(jogador)
+    
+
